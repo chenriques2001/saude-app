@@ -1,1 +1,583 @@
-<h1>Diário de Saúde</h1>
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Diário de Saúde</title>
+<meta name="theme-color" content="#1f7a63">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Saúde">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* VOICE: calmo, clínico, pessoal
+   IDEA: caderneta de saúde de bolso, uma página por dia
+   PICTURE: o próprio formulário do dia, com a ansiedade no topo
+   COLOUR/TYPE: verde-pinheiro + azul-água, Manrope + números mono
+   LAYOUT: uma coluna, cartões por secção, barra de navegação fixa em baixo */
+:root{
+  --bg:#f3f6f4;--card:#fff;--ink:#14302a;--muted:#5d716b;--line:#dbe5e0;
+  --accent:#1f7a63;--accent-soft:#dcefe8;--water:#2f7fc1;--water-soft:#e1eef9;
+  --warn:#b4621a;--warn-soft:#f6e7d8;--danger:#b23a3a;--danger-soft:#f6dede;
+  --f-body:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-num:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1715;--card:#16211e;--ink:#e3eee9;--muted:#93a7a0;--line:#26332f;
+  --accent:#4cc3a0;--accent-soft:#183a31;--water:#6db3ec;--water-soft:#152b3d;
+  --warn:#e3a061;--warn-soft:#3a2a18;--danger:#ef7b7b;--danger-soft:#3b1d1d;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1715;--card:#16211e;--ink:#e3eee9;--muted:#93a7a0;--line:#26332f;
+  --accent:#4cc3a0;--accent-soft:#183a31;--water:#6db3ec;--water-soft:#152b3d;
+  --warn:#e3a061;--warn-soft:#3a2a18;--danger:#ef7b7b;--danger-soft:#3b1d1d;color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--f-body);overflow-x:clip;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:12px calc(92px + env(safe-area-inset-bottom,0px))}
+main{max-width:680px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+h1{font-size:22px;margin:0;font-weight:700;letter-spacing:-.01em}
+h2{font-size:16px;margin:0;font-weight:700}
+h3{font-size:14px;margin:0;font-weight:700}
+.muted{color:var(--muted);font-size:13px}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums;white-space:nowrap}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.card.anx{border-color:var(--accent);border-width:2px}
+.row{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}
+.spread{justify-content:space-between;align-items:center}
+button{font:inherit;font-weight:600;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:9px 12px;cursor:pointer;min-height:42px}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+button.water{background:var(--water-soft);border-color:transparent;color:var(--water)}
+button.ghost{background:transparent;border-color:transparent;color:var(--muted);padding:6px 8px;min-height:36px}
+button.small{min-height:34px;padding:5px 10px;font-size:13px}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+input,select,textarea{font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 10px;width:100%}
+input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent);flex:none;padding:0}
+textarea{min-height:110px;resize:vertical;line-height:1.5}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);flex:1 1 130px}
+label.f.s{flex:0 1 120px}
+.sw{display:inline-flex;align-items:center;gap:8px;font-weight:600;cursor:pointer;min-height:36px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:99px;padding:5px 10px;font-size:14px;cursor:pointer;background:var(--bg)}
+.chip input{width:16px;height:16px}
+.chip:has(input:checked){background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.grp{display:flex;flex-direction:column;gap:6px;padding-top:6px;border-top:1px dashed var(--line)}
+.grp:first-child{border-top:0;padding-top:0}
+.scale{display:flex;gap:4px;flex-wrap:wrap}
+.scale button{flex:1 1 0;min-height:38px;padding:4px 0;font-family:var(--f-num)}
+.scale button.on{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.scale.anxs button.on{background:var(--warn);border-color:var(--warn)}
+.li{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;padding:8px 0;border-top:1px solid var(--line)}
+.li:first-child{border-top:0}
+details.meal{border:1px solid var(--line);border-radius:12px;background:var(--bg)}
+details.meal>summary{list-style:none;cursor:pointer;padding:12px;display:flex;justify-content:space-between;gap:8px;font-weight:700}
+details.meal>summary::-webkit-details-marker{display:none}
+details.meal>summary::after{content:"+";color:var(--muted);font-weight:500}
+details.meal[open]>summary::after{content:"–"}
+details.meal .in{padding:0 12px 12px;display:flex;flex-direction:column;gap:10px}
+.tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--accent-soft);color:var(--accent)}
+.tag.w{background:var(--warn-soft);color:var(--warn)}
+.bar{height:10px;border-radius:99px;background:var(--water-soft);overflow:hidden}
+.bar>span{display:block;height:100%;background:var(--water);border-radius:99px}
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);z-index:5;
+  padding:4px max(6px,env(safe-area-inset-right,0px)) calc(4px + env(safe-area-inset-bottom,0px)) max(6px,env(safe-area-inset-left,0px))}
+nav .in{display:flex;max-width:680px;margin:0 auto}
+nav button{flex:1;border:0;background:transparent;color:var(--muted);font-size:11px;display:flex;flex-direction:column;align-items:center;gap:1px;padding:6px 0;min-height:50px}
+nav svg{width:22px;height:22px}
+nav button[aria-current="page"]{color:var(--accent)}
+.datebar{display:flex;align-items:center;gap:4px}
+.datebar input{width:150px}
+.status{font-size:12px;color:var(--muted)}
+.banner{background:var(--warn-soft);color:var(--warn);border-radius:12px;padding:10px 12px;font-size:14px}
+.doc{display:grid;grid-template-columns:56px minmax(0,1fr);gap:12px;padding:12px 0;border-top:1px solid var(--line);align-items:start}
+.doc:first-child{border-top:0}
+.thumb{width:56px;height:56px;border-radius:10px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;overflow:hidden;font-weight:700;font-size:12px}
+.thumb img{width:100%;height:100%;object-fit:cover}
+.acts{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}
+.year{font-family:var(--f-num);font-size:20px;font-weight:500}
+.med{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;padding:8px 0;border-top:1px solid var(--line);cursor:pointer}
+.chartbox{position:relative;height:260px}
+.empty{color:var(--muted);padding:6px 0}
+.modal{position:fixed;inset:0;z-index:20;background:var(--bg);overflow:auto;
+  padding:calc(12px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.modal .head{position:sticky;top:0;background:var(--bg);display:flex;justify-content:space-between;align-items:center;gap:8px;padding-bottom:10px;z-index:1}
+.pages{display:flex;flex-direction:column;gap:12px;max-width:900px;margin:0 auto}
+.pages canvas,.pages img{width:100%;height:auto;border-radius:8px;background:#fff;border:1px solid var(--line)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:99px;font-size:13px;font-weight:600;z-index:30}
+.rel{padding:10px 0;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:4px}
+.rel:first-child{border-top:0}
+.rel p{margin:0;white-space:pre-wrap}
+.chk{display:flex;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line);cursor:pointer}
+.chk:first-child{border-top:0}
+.chk .h{font-family:var(--f-num);font-size:12px;color:var(--muted);width:44px;flex:none}
+.err{color:var(--danger);font-size:13px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<main>
+  <header class="row spread">
+    <div>
+      <h1 id="vtitle">Hoje</h1>
+      <div class="row" style="gap:4px;align-items:center"><span class="status" id="status">A abrir…</span><button class="ghost small" id="sync-btn" aria-label="Sincronizar agora">↻ Sincronizar</button></div>
+    </div>
+    <div class="datebar" id="datebar">
+      <button class="ghost" id="prev" aria-label="Dia anterior">‹</button>
+      <input type="date" id="day" aria-label="Dia">
+      <button class="ghost" id="next" aria-label="Dia seguinte">›</button>
+    </div>
+  </header>
+  <div class="banner" id="banner" hidden></div>
+
+  <section id="v-hoje" class="view" style="display:flex;flex-direction:column;gap:14px"></section>
+
+  <section id="v-relato" class="view" hidden>
+    <div class="card">
+      <h2>Conta-me o teu dia</h2>
+      <div class="muted">Escreve como foi o dia: o que fizeste, o que sentiste, o que te preocupou e o que correu bem. Fica guardado no teu repositório privado. Quando disseres no chat do projeto SAÚDE "sincroniza os relatos", eu leio-os de lá e gravo-os no projeto.</div>
+      <div class="row"><label class="f s">Dia<input type="date" id="r-date"></label></div>
+      <textarea id="r-text" placeholder="Hoje acordei às… Senti… Correu bem…"></textarea>
+      <div id="r-err" class="err" hidden></div>
+      <div class="row"><button class="primary" id="r-save">Guardar relato</button><button id="r-copy">Copiar relatos por enviar</button></div>
+    </div>
+    <div class="card"><div class="row spread"><h2>Relatos guardados</h2><span class="muted" id="r-count"></span></div><div id="r-list"></div></div>
+  </section>
+
+  <section id="v-graficos" class="view" hidden></section>
+
+  <section id="v-docs" class="view" hidden>
+    <div class="card">
+      <div class="row spread"><h2>Meus documentos</h2><span class="muted" id="d-count"></span></div>
+      <div id="d-list"><div class="empty">A carregar documentos…</div></div>
+    </div>
+    <div class="card" id="d-add">
+      <h2>Anexar documento</h2>
+      <label class="f">Ficheiro (PDF ou imagem)<input type="file" id="d-file" accept="application/pdf,image/*"></label>
+      <div class="row">
+        <label class="f">Título<input type="text" id="d-title" placeholder="Ex.: Análises de rotina"></label>
+        <label class="f s">Data<input type="date" id="d-date"></label>
+      </div>
+      <div class="row">
+        <label class="f">Tipo<select id="d-cat"><option>Análises</option><option>ECG</option><option>Ecocardiograma</option><option>Holter</option><option>Receita</option><option>Relatório médico</option><option>Imagiologia</option><option>Ecografia</option><option>Outro</option></select></label>
+        <label class="f">Notas<input type="text" id="d-note" placeholder="Ex.: pedido pela médica de família"></label>
+      </div>
+      <div id="d-err" class="err" hidden></div>
+      <button class="primary" id="d-save">Guardar documento</button>
+    </div>
+  </section>
+
+  <section id="v-meds" class="view" hidden>
+    <div class="card"><h2>Medicação tomada</h2><div class="muted">Tudo o que registaste em Hoje, do mais recente para o mais antigo. Toca numa linha para abrir esse dia.</div></div>
+    <div id="m-list" style="display:flex;flex-direction:column;gap:14px"></div>
+  </section>
+
+  <section id="v-mais" class="view" hidden>
+    <div class="card">
+      <h2>Sobre mim</h2>
+      <div class="muted">O teu contexto de saúde, o mesmo das instruções do projeto. Acrescenta o que quiseres.</div>
+      <textarea id="s-text" style="min-height:260px"></textarea>
+      <div class="row spread"><button class="primary" id="s-save">Guardar</button><span class="muted" id="s-when"></span></div>
+    </div>
+    <div class="card"><div class="row spread"><h2>Plano do dia</h2><span class="num" id="p-score"></span></div><div class="muted">Marca o que cumpriste no dia escolhido em cima.</div><div id="p-list"></div></div>
+    <div class="card" id="gh-card">
+      <h2>Ligação ao GitHub</h2>
+      <div class="muted">Os teus dados ficam no repositório privado. O token fica guardado só neste dispositivo.</div>
+      <div class="row"><label class="f">Utilizador GitHub<input id="g-user" autocomplete="username" autocapitalize="off" spellcheck="false"></label><label class="f">Repositório de dados<input id="g-repo" autocapitalize="off" spellcheck="false"></label></div>
+      <label class="f">Token<input id="g-token" type="password" autocomplete="off" placeholder="github_pat_…"></label>
+      <div id="g-err" class="err" hidden></div>
+      <div class="row"><button class="primary" id="g-save">Guardar e testar</button><button id="g-sync">Sincronizar agora</button><button class="ghost" id="g-forget">Esquecer neste dispositivo</button></div>
+      <div class="muted" id="g-info"></div>
+    </div>
+  </section>
+</main>
+
+<div class="modal" id="viewer" hidden>
+  <div class="head"><h2 id="v-name" style="overflow-wrap:anywhere"></h2><div class="row"><button class="small" id="v-dl">Descarregar</button><button class="small" id="v-close">Fechar</button></div></div>
+  <div class="pages" id="v-pages"></div>
+</div>
+
+<nav><div class="in">
+  <button data-view="hoje" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>Hoje</button>
+  <button data-view="relato"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Relato</button>
+  <button data-view="graficos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Gráficos</button>
+  <button data-view="docs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>Docs</button>
+  <button data-view="meds"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="9" width="18" height="7" rx="3.5" transform="rotate(-45 12 12.5)"/><path d="M9.5 10l5 5"/></svg>Medicação</button>
+  <button data-view="mais"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Sobre mim</button>
+</div></nav>
+
+<script>
+{
+/* ---------- constantes ---------- */
+const FRUTAS=["Banana","Maçã","Uva","Dióspiro","Kiwi","Romã","Morango","Pera","Maçã assada","Laranja","Tangerina","Outra"];
+const PA={"Nada":["Nada"],"Torradas":["Pão normal","Pão integral"],"Cereais com leite":["Estrelitas","Chocapic","Lion","Corn Flakes","Nestum"],"Bolachas":["Belgas","Maria","Chocolate","Filipinos","Aveia"],"Sandes":["Manteiga","Queijo flamengo","Queijo de alho e ervas","Fiambre de frango","Fiambre de peru"],"Tosta mista":["Pão normal","Croissant"],"Bebida":["Leite normal","Leite com chocolate","Café","Chá"]};
+const CARNE=["Frango","Peru","Porco","Vaca","Novilho","Borrego","Hambúrguer","Salsichas / enchidos","Outra"];
+const PEIXE=["Salmão","Bacalhau","Atum","Pescada","Dourada","Robalo","Sardinha","Polvo","Camarão / marisco","Outro"];
+const VEG=["Ovos","Feijão / grão","Tofu","Massa com legumes","Outro"];
+const ACOMP=["Arroz","Massa","Batata cozida","Batata frita de pacote","Batata frita de air fryer","Batata frita caseira","Legumes"];
+const SALADA=["Tomate","Alface","Alface iceberg","Beterraba","Queijo feta","Queijo mozzarella","Cebola","Cebola roxa","Pepino"];
+const SOPA=["Sem sopa","Legumes","Creme de cenoura","Outra"];
+const REFRI=["Coca-Cola","Coca-Cola Zero","Fanta","Sprite","7Up","Sumol","Ice Tea","Outro"];
+const MEALS=[["pa","Pequeno-almoço"],["lm","Lanche da manhã"],["al","Almoço"],["lt","Lanche da tarde"],["ja","Jantar"],["ce","Ceia"]];
+const PLAN=[["07:00","Acordar à hora (mesmo cansado)"],["07:05","400 ml de água e luz natural 10 min"],["07:30","Pequeno-almoço com proteína"],["11:00","1.ª garrafa de água"],["13:00","Almoço longe do ecrã e 10 min a andar"],["14:00","Última cafeína do dia"],["15:00","2.ª garrafa de água"],["16:30","Lanche: fruta e frutos secos"],["18:00","Caminhada 30 min ou ginásio"],["19:00","3.ª garrafa de água"],["20:00","Jantar leve"],["—","Sem fritos nem doces (ou só um, pequeno)"],["22:00","Ecrãs desligados, alongar 5 min"],["22:30","Respiração lenta 5 min"],["23:00","Deitar"]];
+const WATER_GOAL=2000;
+
+/* ---------- utilidades ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const z=n=>String(n).padStart(2,"0");
+const todayStr=(d=new Date())=>d.getFullYear()+"-"+z(d.getMonth()+1)+"-"+z(d.getDate());
+const nowTime=()=>{const d=new Date();return z(d.getHours())+":"+z(d.getMinutes())};
+const dmy=s=>s?s.split("-").reverse().join("/"):"";
+const fmtDay=s=>{try{return new Date(s+"T12:00").toLocaleDateString("pt-PT",{weekday:"long",day:"numeric",month:"long"})}catch(e){return s}};
+const getP=(o,p)=>p.split(".").reduce((a,k)=>a==null?undefined:a[k],o);
+const setP=(o,p,v)=>{const ks=p.split(".");let a=o;for(let i=0;i<ks.length-1;i++){if(a[ks[i]]==null||typeof a[ks[i]]!=="object")a[ks[i]]={};a=a[ks[i]]}a[ks[ks.length-1]]=v};
+const clone=o=>JSON.parse(JSON.stringify(o));
+const mins=t=>{if(!t||!/^\d\d:\d\d/.test(t))return null;return +t.slice(0,2)*60+ +t.slice(3,5)};
+const n=v=>{const x=parseFloat(String(v??"").replace(",","."));return isFinite(x)?x:0};
+function toast(t){const e=document.createElement("div");e.className="toast";e.textContent=t;document.body.appendChild(e);setTimeout(()=>e.remove(),2000)}
+function armed(btn,fn){if(btn.dataset.armed){fn();return}btn.dataset.armed="1";const t=btn.textContent;btn.textContent="Confirmar?";btn.style.color="var(--danger)";setTimeout(()=>{delete btn.dataset.armed;btn.textContent=t;btn.style.color=""},3000)}
+function loadScript(src){return new Promise((res,rej)=>{if(document.querySelector('script[src="'+src+'"]'))return res();const s=document.createElement("script");s.src=src;s.onload=res;s.onerror=()=>rej(new Error("script"));document.head.appendChild(s)})}
+
+function blankDay(d){return{date:d,sleep:{bed:"",wake:"",quality:0,wakes:[]},anx:{level:null,episodes:[],note:""},water:{bottles:[],glasses:[],glassSize:250},
+  meals:{},fruit:[],extras:[],ex:{walk:{yes:false,from:"",to:"",km:""},gym:{yes:false,min:"",desc:""}},work:{screen:"",expl:""},
+  leisure:{it:{yes:false,min:"",what:""},console:{yes:false,min:"",what:""},read:{yes:false,min:"",what:""}},bp:{yes:false,list:[]},meds:[],checks:{},notes:""}}
+function fill(base,src){if(src==null||typeof src!=="object"||Array.isArray(src))return src??base;const out=Array.isArray(base)?[]:{...base};for(const k in src){out[k]=(base&&typeof base[k]==="object"&&!Array.isArray(base[k])&&base[k]!==null)?fill(base[k],src[k]):src[k]}return out}
+
+/* ---------- estado: guardo tudo no dispositivo e sincronizo com o GitHub ---------- */
+const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}};
+const blankData=()=>({versao:1,days:{},relatos:[],sobre:{text:"",updatedAt:""},docs:[]});
+let cfg=Object.assign({user:"",repo:"saude-dados",token:""},LS.get("ds-cfg",{}));
+let D=Object.assign(blankData(),LS.get("ds-data",{}));
+let pend=LS.get("ds-pend",false),rev=0,syncing=false,saveTimer=null;
+let days=D.days,docs=[],relatos=[],sobre=null;
+let cur=todayStr(),view="hoje";
+const openMeals=new Set();
+// Recalculo as listas que as vistas usam, sem os itens apagados
+function derive(){days=D.days;docs=D.docs.filter(x=>!x.deleted);relatos=D.relatos.filter(x=>!x.deleted);sobre=D.sobre}
+derive();
+function day(d=cur){D.days[d]=D.days[d]?fill(blankDay(d),D.days[d]):blankDay(d);days=D.days;return D.days[d]}
+function status(t){$("#status").textContent=t}
+function banner(t){const b=$("#banner");b.textContent=t||"";b.hidden=!t}
+function persist(){if(!LS.set("ds-data",D))status("A memória do navegador está cheia")}
+const ghOK=()=>!!(cfg.user&&cfg.repo&&cfg.token);
+// Marco que há alterações por enviar e agendo o envio para daqui a 5 segundos
+function changed(){rev++;persist();pend=true;LS.set("ds-pend",true);status(ghOK()?"Por enviar…":"Guardado só neste dispositivo");clearTimeout(saveTimer);saveTimer=setTimeout(sync,5000)}
+function save(){const d=D.days[cur];if(d)d.u=Date.now();changed()}
+
+/* ---------- GitHub ---------- */
+const API=p=>"https://api.github.com/repos/"+encodeURIComponent(cfg.user)+"/"+encodeURIComponent(cfg.repo)+"/contents/"+p.split("/").map(encodeURIComponent).join("/");
+function gh(p,opt={}){return fetch(API(p),{cache:"no-store",...opt,headers:{Authorization:"Bearer "+cfg.token,Accept:"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28",...(opt.headers||{})}})}
+function b64(u8){let s="";for(let i=0;i<u8.length;i+=0x8000)s+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000));return btoa(s)}
+function unb64(t){const s=atob(t.replace(/\s/g,""));const u=new Uint8Array(s.length);for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return u}
+// Leio o dados.json e o respetivo "sha", que o GitHub exige para eu poder escrever por cima
+async function pull(){const r=await gh("dados.json");if(r.status===404)return{data:null,sha:null};
+  if(r.status===401||r.status===403)throw{msg:"O token não tem acesso ao repositório"};if(!r.ok)throw{msg:"O GitHub respondeu "+r.status};
+  const j=await r.json();let txt;
+  if(j.content&&j.encoding==="base64")txt=new TextDecoder().decode(unb64(j.content));
+  else{const r2=await gh("dados.json",{headers:{Accept:"application/vnd.github.raw"}});txt=await r2.text()}
+  return{data:txt.trim()?JSON.parse(txt):null,sha:j.sha}}
+async function putFile(p,content,sha,msg){const r=await gh(p,{method:"PUT",body:JSON.stringify({message:msg,content,sha:sha||undefined})});
+  if(r.status===409||r.status===422)return"conflict";if(r.status===401||r.status===403)throw{msg:"O token não tem permissão de escrita"};if(!r.ok)throw{msg:"O GitHub respondeu "+r.status};return"ok"}
+// Junto duas versões: por dia, por relato e por documento fico com a alteração mais recente
+function merge(R,L){if(!R)return clone(L);const o=blankData(),RD=R.days||{},LD=L.days||{};
+  new Set([...Object.keys(RD),...Object.keys(LD)]).forEach(k=>{const a=RD[k],b=LD[k];o.days[k]=!a?b:!b?a:((b.u||0)>(a.u||0)?b:a)});
+  const byId=(A=[],B=[])=>{const m=new Map();A.forEach(x=>m.set(x.id,x));B.forEach(x=>{const y=m.get(x.id);if(!y||(x.u||0)>(y.u||0))m.set(x.id,x)});return[...m.values()]};
+  o.relatos=byId(R.relatos,L.relatos);o.docs=byId(R.docs,L.docs);
+  const sa=R.sobre||{},sb=L.sobre||{};o.sobre=(sb.updatedAt||"")>(sa.updatedAt||"")?sb:sa;return o}
+async function sync(){
+  if(!ghOK()){status("Guardado só neste dispositivo");return}
+  if(syncing){clearTimeout(saveTimer);saveTimer=setTimeout(sync,2000);return}
+  if(navigator.onLine===false){status("Sem internet: envio quando voltar");return}
+  syncing=true;status("A sincronizar…");const rev0=rev;
+  try{let done=false;
+    for(let t=0;t<3&&!done;t++){const{data,sha}=await pull();const M=merge(data,D);
+      if(pend||!data){const r=await putFile("dados.json",b64(new TextEncoder().encode(JSON.stringify(M,null,1))),sha,"Diário "+new Date().toLocaleString("pt-PT"));if(r==="conflict")continue}
+      D=merge(M,D);done=true}
+    if(!done)throw{msg:"Conflito ao gravar. Tenta outra vez."}
+    derive();pend=rev!==rev0;LS.set("ds-pend",pend);persist();LS.set("ds-last",new Date().toISOString());
+    status(pend?"Por enviar…":"Sincronizado às "+nowTime());banner("");if(pend){clearTimeout(saveTimer);saveTimer=setTimeout(sync,3000)}
+    afterSync()}
+  catch(e){status((e&&e.msg)||"Sem ligação ao GitHub. Os dados ficam guardados aqui.")}
+  syncing=false}
+function afterSync(){const act=document.activeElement,typing=act&&/INPUT|TEXTAREA|SELECT/.test(act.tagName);
+  if(view==="hoje"&&!(typing&&H.contains(act)))renderHoje();else if(view!=="hoje"&&!typing)render()}
+
+/* ---------- controlos ---------- */
+const inp=(p,label,type="text",cls="",extra="")=>{const v=getP(day(),p)??"";return `<label class="f ${cls}">${label}<input type="${type}" data-k="${p}" value="${esc(v)}" ${type==="number"?'inputmode="decimal" min="0" step="any"':""} ${extra}></label>`};
+const sw=(p,label)=>`<label class="sw"><input type="checkbox" data-k="${p}" data-re ${getP(day(),p)?"checked":""}>${label}</label>`;
+const sel=(p,label,opts,re=false,cls="")=>{const v=getP(day(),p)??"";return `<label class="f ${cls}">${label}<select data-k="${p}" ${re?"data-re":""}><option value="">—</option>${opts.map(o=>`<option ${o===v?"selected":""}>${esc(o)}</option>`).join("")}</select></label>`};
+const chips=(p,opts,prefix="")=>{const arr=getP(day(),p)||[];return `<div class="chips">${opts.map(o=>{const val=prefix?prefix+": "+o:o;return `<label class="chip"><input type="checkbox" data-k="${p}" data-v="${esc(val)}" ${arr.includes(val)?"checked":""}>${esc(o)}</label>`}).join("")}</div>`};
+const scale=(p,max,cls="")=>{const v=getP(day(),p);let h="";for(let i=(cls?0:1);i<=max;i++)h+=`<button type="button" data-act="scale" data-p="${p}" data-val="${i}" class="${v===i?"on":""}" aria-pressed="${v===i}">${i}</button>`;return `<div class="scale ${cls}">${h}</div>`};
+const del=(p,i)=>`<button class="ghost small" data-act="del" data-p="${p}" data-i="${i}" aria-label="Apagar">Apagar</button>`;
+const soda=base=>`<div class="grp"><div class="row">${sw(base+".soda.yes","Bebi refrigerante")}</div>${getP(day(),base+".soda.yes")?`<div class="row">${sel(base+".soda.kind","Qual",REFRI)}${inp(base+".soda.ml","Quantidade (ml)","number","s")}</div>`:""}</div>`;
+
+/* ---------- cálculos ---------- */
+function sleepH(d){const b=mins(d.sleep.bed),w=mins(d.sleep.wake);if(b==null||w==null)return null;let x=w-b;if(x<=0)x+=1440;return Math.round(x/6)/10}
+function waterMl(d){return d.water.glasses.reduce((s,g)=>s+n(g.ml),0)+d.water.bottles.reduce((s,b)=>s+n(b.size),0)}
+function walkMin(d){if(!d.ex.walk.yes)return 0;const a=mins(d.ex.walk.from),b=mins(d.ex.walk.to);if(a==null||b==null)return 0;let x=b-a;if(x<0)x+=1440;return x}
+function exMin(d){return walkMin(d)+(d.ex.gym.yes?n(d.ex.gym.min):0)}
+function leisureMin(d){const L=d.leisure;return(L.it.yes?n(L.it.min):0)+(L.console.yes?n(L.console.min):0)+(L.read.yes?n(L.read.min):0)}
+function mealsOf(d){return MEALS.map(([k])=>d.meals[k]).filter(Boolean)}
+function friedCount(d){let c=d.extras.filter(e=>e.kind==="fritos").length;mealsOf(d).forEach(m=>{if((m.sides||[]).some(s=>/frita/i.test(s)))c++});return c}
+function sweetCount(d){return d.extras.filter(e=>e.kind==="doces").length}
+function sodaCount(d){return mealsOf(d).filter(m=>m.soda&&m.soda.yes).length}
+function foodScore(d){let s=5;s+=Math.min(3,d.fruit.length);["al","ja"].forEach(k=>{const m=d.meals[k];if(m&&m.soup&&m.soup!=="Sem sopa")s+=1;if(m&&(m.salad||[]).length)s+=0.5});
+  s-=friedCount(d)*1.5;s-=sweetCount(d);s-=sodaCount(d);const w=waterMl(d);if(w>=2000)s+=2;else if(w>=1500)s+=1;return Math.max(0,Math.min(10,Math.round(s*10)/10))}
+function hasData(d){return!!(d&&(d.sleep.wake||d.sleep.bed||d.anx.level!=null||waterMl(d)||d.fruit.length||mealsOf(d).length||exMin(d)||n(d.work.screen)||n(d.work.expl)||leisureMin(d)||d.meds.length||d.bp.list.length))}
+
+/* ---------- Hoje: secções ---------- */
+const SECS={
+anx(d){return `<section class="card anx" data-sec="anx"><div class="row spread"><h2>Ansiedade</h2><span class="muted">0 calmo · 10 muito alta</span></div>
+  ${scale("anx.level",10,"anxs")}
+  <div class="row spread"><h3>Momentos de ansiedade</h3><button class="small" data-act="add" data-p="anx.episodes" data-tpl="ep">+ Momento</button></div>
+  <div>${d.anx.episodes.map((e,i)=>`<div class="li">${inp(`anx.episodes.${i}.t`,"Hora","time","s")}${inp(`anx.episodes.${i}.lvl`,"Intensidade 0–10","number","s")}${inp(`anx.episodes.${i}.note`,"O que aconteceu / o que fiz")}${del("anx.episodes",i)}</div>`).join("")||'<div class="empty">Sem momentos registados.</div>'}</div></section>`},
+sleep(d){const h=sleepH(d);return `<section class="card" data-sec="sleep"><div class="row spread"><h2>Sono</h2><span class="num">${h!=null?h+" h":""}${d.sleep.wakes.length?" · "+d.sleep.wakes.length+" interrupções":""}</span></div>
+  <div class="row">${inp("sleep.bed","Deitei-me às (noite anterior)","time","","data-re")}${inp("sleep.wake","Acordei às","time","","data-re")}</div>
+  <div class="muted">Qualidade do sono (1 má · 5 ótima)</div>${scale("sleep.quality",5)}
+  <div class="row spread"><h3>Interrupções do sono</h3><button class="small" data-act="add" data-p="sleep.wakes" data-tpl="wake">+ Acordei</button></div>
+  <div>${d.sleep.wakes.map((w,i)=>`<div class="li">${inp(`sleep.wakes.${i}.t`,"Hora","time","s")}${inp(`sleep.wakes.${i}.note`,"Porquê (xixi, barulho, ansiedade…)")}${del("sleep.wakes",i)}</div>`).join("")||'<div class="empty">Dormiste seguido.</div>'}</div></section>`},
+water(d){const w=waterMl(d);return `<section class="card" data-sec="water"><div class="row spread"><h2>Água</h2><span class="num">${w} / ${WATER_GOAL} ml</span></div>
+  <div class="bar"><span style="width:${Math.min(100,w/WATER_GOAL*100)}%"></span></div>
+  <div class="grp"><h3>Em casa: copos</h3><div class="row">${sel("water.glassSize","Tamanho do copo",["200","250","300","330"],false,"s")}<button class="water" data-act="glass">+ 1 copo agora</button></div>
+  <div>${d.water.glasses.map((g,i)=>`<div class="li">${inp(`water.glasses.${i}.t`,"Hora","time","s")}${inp(`water.glasses.${i}.ml`,"ml","number","s","data-re")}${del("water.glasses",i)}</div>`).join("")}</div></div>
+  <div class="grp"><h3>Na rua: garrafas</h3><div class="muted">Indica o tamanho e entre que horas a bebeste. Eu calculo quanto bebeste por hora.</div>
+  <div class="row"><button class="water" data-act="bottle" data-size="1000">+ Garrafa 1 L</button><button class="water" data-act="bottle" data-size="1500">+ Garrafa 1,5 L</button><button class="water" data-act="bottle" data-size="500">+ 0,5 L</button></div>
+  <div>${d.water.bottles.map((b,i)=>{const a=mins(b.from),e=mins(b.to);let rate="";if(a!=null&&e!=null){let x=e-a;if(x<=0)x+=1440;rate=Math.round(n(b.size)/(x/60))+" ml/h em "+(Math.round(x/6)/10)+" h"}
+    return `<div class="li">${inp(`water.bottles.${i}.size`,"ml","number","s","data-re")}${inp(`water.bottles.${i}.from`,"Comecei","time","s","data-re")}${inp(`water.bottles.${i}.to`,"Acabei","time","s","data-re")}<span class="muted num">${rate}</span>${del("water.bottles",i)}</div>`}).join("")}</div></div></section>`},
+meals(d){return `<section class="card" data-sec="meals"><h2>Refeições</h2>${MEALS.map(([k,l])=>{const m=d.meals[k]||{};const sum=[m.t,m.kind,m.sub].filter(Boolean).join(" · ")||((m.items||[]).length?(m.items.length+" itens"):"")||(m.desc?"registado":"");
+  return `<details class="meal" data-meal="${k}" ${openMeals.has(k)?"open":""}><summary><span>${l}</span><span class="muted">${esc(sum)}</span></summary><div class="in">${mealBody(k,m)}</div></details>`}).join("")}</section>`},
+fruit(d){return `<section class="card" data-sec="fruit"><div class="row spread"><h2>Fruta, fritos e doces</h2><span class="muted num">fruta ${d.fruit.length} · fritos ${friedCount(d)} · doces ${sweetCount(d)}</span></div>
+  <div class="row"><button class="small" data-act="add" data-p="fruit" data-tpl="fruit">+ Fruta</button><button class="small" data-act="add" data-p="extras" data-tpl="fritos">+ Fritos</button><button class="small" data-act="add" data-p="extras" data-tpl="doces">+ Gomas / doces</button></div>
+  <div>${d.fruit.map((f,i)=>`<div class="li"><span class="tag">Fruta</span>${sel(`fruit.${i}.f`,"Qual",FRUTAS)}${inp(`fruit.${i}.t`,"Hora","time","s")}${del("fruit",i)}</div>`).join("")}
+  ${d.extras.map((e,i)=>`<div class="li"><span class="tag w">${e.kind==="fritos"?"Fritos":"Doces"}</span>${inp(`extras.${i}.desc`,"O quê")}${inp(`extras.${i}.t`,"Hora","time","s")}${del("extras",i)}</div>`).join("")}</div></section>`},
+ex(d){const W=d.ex.walk,G=d.ex.gym;return `<section class="card" data-sec="ex"><div class="row spread"><h2>Exercício</h2><span class="num">${exMin(d)} min</span></div>
+  <div class="grp">${sw("ex.walk.yes","Caminhada")}${W.yes?`<div class="row">${inp("ex.walk.from","Das","time","s","data-re")}${inp("ex.walk.to","Às","time","s","data-re")}${inp("ex.walk.km","Km","number","s")}</div>`:""}</div>
+  <div class="grp">${sw("ex.gym.yes","Ginásio")}${G.yes?`<div class="row">${inp("ex.gym.min","Tempo de treino (min)","number","s","data-re")}${inp("ex.gym.desc","Descrição do treino")}</div>`:""}</div></section>`},
+work(d){return `<section class="card" data-sec="work"><h2>Trabalho</h2><div class="row">${inp("work.screen","Horas em frente ao ecrã","number")}${inp("work.expl","Explicações de matemática (h)","number")}</div></section>`},
+leisure(d){const L=d.leisure;const it=(k,l,ph)=>`<div class="grp">${sw(`leisure.${k}.yes`,l)}${L[k].yes?`<div class="row">${inp(`leisure.${k}.min`,"Tempo (min)","number","s")}${inp(`leisure.${k}.what`,ph)}</div>`:""}</div>`;
+  return `<section class="card" data-sec="leisure"><h2>Lazer</h2>${it("it","Projeto de IT pessoal","Qual projeto")}${it("console","Consola / jogos","Que jogo")}${it("read","Ler","O que li")}</section>`},
+bp(d){return `<section class="card" data-sec="bp"><h2>Tensão arterial</h2>${sw("bp.yes","Medi a tensão hoje")}
+  ${d.bp.yes?`<div>${d.bp.list.map((b,i)=>`<div class="li">${inp(`bp.list.${i}.t`,"Hora","time","s")}${inp(`bp.list.${i}.sys`,"Máx","number","s")}${inp(`bp.list.${i}.dia`,"Mín","number","s")}${inp(`bp.list.${i}.pulse`,"Pulso","number","s")}${del("bp.list",i)}</div>`).join("")}</div><button class="small" data-act="add" data-p="bp.list" data-tpl="bp">+ Medição</button>`:""}</section>`},
+meds(d){return `<section class="card" data-sec="meds"><div class="row spread"><h2>Medicação</h2><button class="small" data-act="add" data-p="meds" data-tpl="med">+ Medicamento</button></div>
+  <div>${d.meds.map((m,i)=>`<div class="li">${inp(`meds.${i}.name`,"Medicamento")}${inp(`meds.${i}.dose`,"Dose","text","s")}${inp(`meds.${i}.t`,"Hora","time","s")}${del("meds",i)}</div>`).join("")||'<div class="empty">Sem medicação neste dia.</div>'}</div></section>`},
+notes(d){return `<section class="card" data-sec="notes"><h2>Notas rápidas</h2><textarea data-k="notes" style="min-height:70px" placeholder="Sintomas, consultas, o que quiseres lembrar">${esc(d.notes)}</textarea><div class="muted">Para contar o dia com calma, usa o separador Relato.</div></section>`}
+};
+function mealBody(k,m){const b="meals."+k;const time=inp(b+".t","Hora","time","s");
+  if(k==="pa"){return `<div class="row">${time}</div>${Object.entries(PA).map(([g,o])=>`<div class="grp"><h3>${g}</h3>${chips(b+".items",o,g)}</div>`).join("")}${inp(b+".desc","Outro (ex.: iogurte grego, fruta)")}${soda(b)}`}
+  if(k==="al"||k==="ja"){const kind=m.kind||"";const list=kind==="Carne"?CARNE:kind==="Peixe"?PEIXE:kind==="Vegetariano"?VEG:null;
+    return `<div class="row">${time}${sel(b+".kind","Prato",["Carne","Peixe","Vegetariano"],true)}${list?sel(b+".sub","Tipo de "+kind.toLowerCase(),list):""}</div>
+    <div class="grp"><h3>Acompanhamento</h3>${chips(b+".sides",ACOMP)}</div><div class="grp"><h3>Salada</h3>${chips(b+".salad",SALADA)}</div>
+    <div class="row">${sel(b+".soup","Sopa",SOPA)}</div>${inp(b+".dish","Nome do prato e ingredientes (se não houver opção)")}${soda(b)}`}
+  return `<div class="row">${time}</div>${inp(b+".desc","O que comi")}${soda(b)}`}
+const ORDER=["anx","sleep","water","meals","fruit","ex","work","leisure","bp","meds","notes"];
+function renderHoje(){const d=day();$("#v-hoje").innerHTML=ORDER.map(s=>SECS[s](d)).join("")}
+function renderSec(s){const el=document.querySelector(`[data-sec="${s}"]`);if(el)el.outerHTML=SECS[s](day())}
+const TPL={ep:()=>({t:nowTime(),lvl:"",note:""}),wake:()=>({t:nowTime(),note:""}),fruit:()=>({t:nowTime(),f:"Banana"}),fritos:()=>({t:nowTime(),kind:"fritos",desc:""}),doces:()=>({t:nowTime(),kind:"doces",desc:""}),bp:()=>({t:nowTime(),sys:"",dia:"",pulse:""}),med:()=>({t:nowTime(),name:"",dose:""})};
+
+const H=$("#v-hoje");
+function secOf(el){const s=el.closest("[data-sec]");return s&&s.dataset.sec}
+function applyInput(el){const p=el.dataset.k;if(!p)return;const d=day();
+  if(el.type==="checkbox"&&el.dataset.v!=null){const a=getP(d,p)||[];const v=el.dataset.v;const i=a.indexOf(v);if(el.checked&&i<0)a.push(v);if(!el.checked&&i>=0)a.splice(i,1);setP(d,p,a)}
+  else if(el.type==="checkbox")setP(d,p,el.checked);
+  else setP(d,p,el.value);save()}
+H.addEventListener("input",e=>{const el=e.target;if(el.dataset.k&&el.type!=="checkbox"&&el.tagName!=="SELECT")applyInput(el)});
+H.addEventListener("change",e=>{const el=e.target;if(!el.dataset.k)return;if(el.type==="checkbox"||el.tagName==="SELECT")applyInput(el);if(el.dataset.re!=null){const s=secOf(el);if(s)renderSec(s)}});
+H.addEventListener("toggle",e=>{const m=e.target.closest&&e.target.closest("details.meal");if(m){m.open?openMeals.add(m.dataset.meal):openMeals.delete(m.dataset.meal)}},true);
+H.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(!b)return;const d=day(),a=b.dataset.act,p=b.dataset.p;
+  if(a==="scale"){const v=+b.dataset.val;setP(d,p,getP(d,p)===v?(p==="anx.level"?null:0):v)}
+  else if(a==="add"){const arr=getP(d,p)||[];arr.push(TPL[b.dataset.tpl]());setP(d,p,arr)}
+  else if(a==="del"){getP(d,p).splice(+b.dataset.i,1)}
+  else if(a==="glass"){d.water.glasses.push({t:nowTime(),ml:n(d.water.glassSize)||250});toast("+1 copo")}
+  else if(a==="bottle"){d.water.bottles.push({size:+b.dataset.size,from:"",to:nowTime()})}
+  save();const s=secOf(b);if(s)renderSec(s)});
+
+/* ---------- navegação ---------- */
+const TITLES={hoje:"Hoje",relato:"Relato",graficos:"Gráficos",docs:"Documentos",meds:"Medicação",mais:"Sobre mim"};
+function go(v){if(!TITLES[v])v="hoje";view=v;document.querySelectorAll(".view").forEach(x=>{const on=x.id==="v-"+v;x.hidden=!on;x.style.display=on?"flex":"none";x.style.flexDirection="column";x.style.gap="14px"});
+  document.querySelectorAll("nav button").forEach(b=>b.dataset.view===v?b.setAttribute("aria-current","page"):b.removeAttribute("aria-current"));
+  $("#vtitle").textContent=TITLES[v];$("#datebar").style.display=(v==="hoje"||v==="mais")?"flex":"none";
+  try{if(location.hash!=="#"+v)history.replaceState(null,"","#"+v)}catch(e){}
+  render();window.scrollTo(0,0)}
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>go(b.dataset.view));
+window.addEventListener("hashchange",()=>go(location.hash.slice(1)));
+const dayIn=$("#day");
+dayIn.onchange=()=>{if(dayIn.value){cur=dayIn.value;render()}};
+function shift(k){const d=new Date(cur+"T12:00");d.setDate(d.getDate()+k);cur=todayStr(d);render()}
+$("#prev").onclick=()=>shift(-1);$("#next").onclick=()=>shift(1);
+
+function render(){dayIn.value=cur;
+  if(view==="hoje")renderHoje();
+  if(view==="relato")renderRelatos();
+  if(view==="graficos")renderCharts();
+  if(view==="docs")renderDocs();
+  if(view==="meds")renderMeds();
+  if(view==="mais")renderMais()}
+
+/* ---------- relatos ---------- */
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+$("#r-date").value=todayStr();
+function renderRelatos(){const L=[...relatos].sort((a,b)=>(b.date+b.at).localeCompare(a.date+a.at));$("#r-count").textContent=L.length?L.length+" relatos":"";
+  $("#r-list").innerHTML=L.length?L.map(r=>`<div class="rel"><div class="row spread"><b>${esc(fmtDay(r.date))}</b><span class="tag ${r.synced?"":"w"}">${r.synced?"No projeto":"Por sincronizar"}</span></div><p>${esc(r.text)}</p><div><button class="ghost small" data-rdel="${esc(r.id)}">Apagar</button></div></div>`).join(""):'<div class="empty">Ainda não escreveste nenhum relato.</div>';
+  document.querySelectorAll("[data-rdel]").forEach(b=>b.onclick=()=>armed(b,()=>{const r=D.relatos.find(x=>x.id===b.dataset.rdel);if(r){r.deleted=true;r.u=Date.now();derive();changed();renderRelatos()}}))}
+$("#r-text").oninput=()=>$("#r-err").hidden=true;
+$("#r-save").onclick=()=>{const t=$("#r-text").value.trim(),err=$("#r-err");
+  if(!t){err.textContent="Escreve alguma coisa antes de guardar.";err.hidden=false;return}
+  D.relatos.push({id:uid(),date:$("#r-date").value||todayStr(),text:t,at:new Date().toISOString(),synced:false,u:Date.now()});
+  derive();changed();$("#r-text").value="";toast("Relato guardado");renderRelatos()};
+$("#r-copy").onclick=async()=>{const t=relatos.filter(r=>!r.synced).sort((a,b)=>a.date.localeCompare(b.date)).map(r=>dmy(r.date)+"\n"+r.text).join("\n\n");
+  if(!t){toast("Não há relatos por enviar");return}try{await navigator.clipboard.writeText(t);toast("Copiado")}catch(e){$("#r-text").value=t;$("#r-text").select();toast("Seleciona e copia")}};
+
+/* ---------- gráficos ---------- */
+let range=14;const charts={};
+function series(){const L=[];for(let i=range-1;i>=0;i--){const d=new Date(cur+"T12:00");d.setDate(d.getDate()-i);L.push(todayStr(d))}
+  return L.map(k=>{const raw=days[k];const d=raw?fill(blankDay(k),raw):null;const has=hasData(d);if(!has)return{k,has:false};
+    const sh=sleepH(d),q=d.sleep.quality||0,w=d.sleep.wakes.length;
+    let ss=sh==null?null:Math.min(10,sh/8*10)-0.7*w;if(ss!=null&&q)ss=(ss+q*2)/2;
+    const scr=n(d.work.screen),ex=exMin(d),le=leisureMin(d),bp=d.bp.list.filter(b=>n(b.sys));
+    return{k,has,sleepH:sh,wakes:w,sleepS:ss==null?null:Math.max(0,Math.round(ss*10)/10),anx:d.anx.level,screen:scr||null,expl:n(d.work.expl)||null,
+      screenS:scr?Math.max(0,10-Math.max(0,scr-9)*1.5):null,food:foodScore(d),water:Math.round(waterMl(d)/100)/10,fruit:d.fruit.length,fried:friedCount(d),sweet:sweetCount(d),soda:sodaCount(d),
+      exMin:ex,km:n(d.ex.walk.km)||null,exS:Math.min(10,ex/30*10),it:d.leisure.it.yes?n(d.leisure.it.min):0,con:d.leisure.console.yes?n(d.leisure.console.min):0,read:d.leisure.read.yes?n(d.leisure.read.min):0,
+      leS:Math.min(10,le/60*10),sys:bp.length?n(bp[bp.length-1].sys):null,dia:bp.length?n(bp[bp.length-1].dia):null,pulse:bp.length?(n(bp[bp.length-1].pulse)||null):null}})}
+const CH=[
+ {id:"all",title:"Avaliação do dia (0 a 10)",note:"Sono (8 h = 10, menos interrupções), ecrã (até 9 h = 10), alimentação (fruta, sopa e água sobem; fritos, doces e refrigerantes descem), exercício (30 min = 10), lazer (60 min = 10). Explicações em horas. Ansiedade a tracejado: quanto mais alta, pior."},
+ {id:"sleep",title:"Sono",note:"Horas dormidas (barras) e interrupções (linha)."},
+ {id:"anx",title:"Ansiedade",note:"Nível do dia, de 0 a 10."},
+ {id:"work",title:"Trabalho e explicações",note:"Horas em frente ao ecrã e horas de explicações de matemática."},
+ {id:"food",title:"Alimentação",note:"Peças de fruta, fritos, doces e refrigerantes por dia (barras) e litros de água (linha)."},
+ {id:"ex",title:"Exercício",note:"Minutos de caminhada e ginásio (barras) e km caminhados (linha)."},
+ {id:"le",title:"Lazer",note:"Minutos por atividade."},
+ {id:"bp",title:"Tensão arterial e pulso",note:"Última medição de cada dia."}];
+function renderCharts(){const V=$("#v-graficos");
+  if(!V.dataset.built){V.dataset.built="1";V.innerHTML=`<div class="card"><div class="row spread"><h2>Período</h2><div class="row">${[7,14,30,90].map(r=>`<button class="small ${r===range?"primary":""}" data-range="${r}">${r} dias</button>`).join("")}</div></div><div class="muted" id="c-info"></div></div>`+
+    CH.map(c=>`<div class="card"><div class="row spread"><h2>${c.title}</h2><button class="small" data-dl="${c.id}">Descarregar imagem</button></div><div class="chartbox"><canvas id="c-${c.id}"></canvas></div><div class="muted">${c.note}</div></div>`).join("");
+    V.querySelectorAll("[data-range]").forEach(b=>b.onclick=()=>{range=+b.dataset.range;V.querySelectorAll("[data-range]").forEach(x=>x.classList.toggle("primary",x===b));drawCharts()});
+    V.querySelectorAll("[data-dl]").forEach(b=>b.onclick=()=>downloadChart(b.dataset.dl));}
+  drawCharts()}
+async function drawCharts(){
+  try{await loadScript("https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js")}catch(e){$("#c-info").textContent="Não foi possível carregar os gráficos. Verifica a ligação à internet.";return}
+  const S=series(),cs=getComputedStyle(document.documentElement),c=v=>cs.getPropertyValue(v).trim();
+  const ink=c("--ink"),mut=c("--muted"),line=c("--line"),acc=c("--accent"),wat=c("--water"),warn=c("--warn"),dan=c("--danger");
+  const P=["#1f7a63","#2f7fc1","#8a5cc2","#b4621a","#2a9d8f","#c2557a","#6b7f2a"];
+  Chart.defaults.color=mut;Chart.defaults.font.family="Manrope, system-ui, sans-serif";Chart.defaults.borderColor=line;
+  const labels=S.map(s=>s.k.slice(8)+"/"+s.k.slice(5,7)),pick=f=>S.map(s=>s.has?(s[f]??null):null);
+  $("#c-info").textContent=S.filter(s=>s.has).length+" de "+range+" dias com registos, até "+dmy(cur)+".";
+  const base=(y,extra={})=>({responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},spanGaps:true,plugins:{legend:{labels:{color:ink,boxWidth:12}}},scales:{x:{ticks:{maxRotation:0,autoSkip:true}},y:{beginAtZero:true,title:{display:!!y,text:y}},...extra}});
+  const L=(label,data,col,o={})=>({type:"line",label,data,borderColor:col,backgroundColor:col,pointRadius:3,tension:.3,...o});
+  const B=(label,data,col,o={})=>({type:"bar",label,data,backgroundColor:col,borderRadius:4,...o});
+  const cfg={
+   all:{type:"line",data:{labels,datasets:[L("Sono",pick("sleepS"),P[0]),L("Ecrã",pick("screenS"),P[1]),L("Explicações (h)",pick("expl"),P[2]),L("Alimentação",pick("food"),P[3]),L("Exercício",pick("exS"),P[4]),L("Lazer",pick("leS"),P[5]),L("Ansiedade",pick("anx"),dan,{borderDash:[6,4]})]},options:base("",{y:{min:0,max:10}})},
+   sleep:{type:"bar",data:{labels,datasets:[B("Horas",pick("sleepH"),acc),L("Interrupções",pick("wakes"),warn,{yAxisID:"y2"})]},options:base("horas",{y2:{position:"right",beginAtZero:true,grid:{display:false},ticks:{precision:0},title:{display:true,text:"interrupções"}}})},
+   anx:{type:"line",data:{labels,datasets:[L("Ansiedade",pick("anx"),warn,{fill:false})]},options:base("0–10",{y:{min:0,max:10}})},
+   work:{type:"bar",data:{labels,datasets:[B("Ecrã (h)",pick("screen"),wat),B("Explicações (h)",pick("expl"),P[2])]},options:base("horas")},
+   food:{type:"bar",data:{labels,datasets:[B("Fruta",pick("fruit"),acc),B("Fritos",pick("fried"),warn),B("Doces",pick("sweet"),P[5]),B("Refrigerantes",pick("soda"),dan),L("Água (L)",pick("water"),wat,{yAxisID:"y2"})]},options:base("quantidade",{y:{beginAtZero:true,ticks:{precision:0},title:{display:true,text:"quantidade"}},y2:{position:"right",beginAtZero:true,grid:{display:false},title:{display:true,text:"litros"}}})},
+   ex:{type:"bar",data:{labels,datasets:[B("Minutos",pick("exMin"),acc),L("Km",pick("km"),wat,{yAxisID:"y2"})]},options:base("minutos",{y2:{position:"right",beginAtZero:true,grid:{display:false},title:{display:true,text:"km"}}})},
+   le:{type:"bar",data:{labels,datasets:[B("Projeto IT",pick("it"),P[1],{stack:"l"}),B("Consola",pick("con"),P[3],{stack:"l"}),B("Ler",pick("read"),P[0],{stack:"l"})]},options:base("minutos",{x:{stacked:true,ticks:{maxRotation:0}},y:{stacked:true,beginAtZero:true,title:{display:true,text:"minutos"}}})},
+   bp:{type:"line",data:{labels,datasets:[L("Máxima",pick("sys"),dan),L("Mínima",pick("dia"),wat),L("Pulso",pick("pulse"),acc,{borderDash:[4,4]})]},options:base("mmHg / bpm",{y:{beginAtZero:false}})}};
+  for(const k in cfg){if(charts[k])charts[k].destroy();const el=document.getElementById("c-"+k);if(el)charts[k]=new Chart(el,cfg[k])}}
+// Descarrego um ficheiro gerado na própria app, através de um link temporário
+function saveBlob(blob,name){const u=URL.createObjectURL(blob);const a=document.createElement("a");a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),5000)}
+function downloadChart(id){const ch=charts[id];if(!ch){toast("Abre os gráficos primeiro");return}
+  const src=ch.canvas,cv=document.createElement("canvas");cv.width=src.width;cv.height=src.height;const x=cv.getContext("2d");
+  x.fillStyle=getComputedStyle(document.body).backgroundColor;x.fillRect(0,0,cv.width,cv.height);x.drawImage(src,0,0);
+  cv.toBlob(b=>{if(b){saveBlob(b,"grafico-"+id+"-"+cur+".png");toast("Imagem descarregada")}},"image/png")}
+
+/* ---------- documentos (ficheiros na pasta documentos/ do repositório) ---------- */
+let viewing=null;const blobs=new Map(),urls=new Map();
+function docFiles(d){return Array.isArray(d.files)?d.files.filter(f=>f&&typeof f.path==="string"&&/^documentos\/[^/]+$/.test(f.path)):[]}
+async function ghBlob(p){if(blobs.has(p))return blobs.get(p);const r=await gh(p,{headers:{Accept:"application/vnd.github.raw"}});if(!r.ok)throw{msg:"Ficheiro não encontrado"};const b=await r.blob();blobs.set(p,b);return b}
+async function blobURL(p){if(urls.has(p))return urls.get(p);const u=URL.createObjectURL(await ghBlob(p));urls.set(p,u);return u}
+function renderDocs(){const L=[...docs].sort((a,b)=>String(b.date||"").localeCompare(String(a.date||""))||String(b.added||"").localeCompare(String(a.added||"")));
+  $("#d-count").textContent=L.length?L.length+" documentos":"";
+  $("#d-list").innerHTML=L.length?L.map(d=>{const F=docFiles(d),f0=F[0]||{},img=/^image\//.test(f0.mime||"");
+    return `<div class="doc"><div class="thumb">${img?`<img alt="" data-thumb="${esc(f0.path)}">`:"PDF"}</div><div><span class="tag">${esc(d.cat||"Documento")}</span>
+    <div style="font-weight:700;overflow-wrap:anywhere">${esc(d.title||f0.name||"Documento")}</div><div class="muted">${esc(dmy(d.date))}${F.length>1?" · "+F.length+" ficheiros":""}${d.note?" · "+esc(d.note):""}</div>
+    <div class="acts"><button class="small" data-dopen="${esc(d.id)}">Abrir</button><button class="small" data-ddl="${esc(d.id)}">Descarregar</button><button class="ghost small" data-ddel="${esc(d.id)}">Apagar</button></div></div></div>`}).join(""):'<div class="empty">Ainda não há documentos. Anexa o primeiro abaixo.</div>';
+  if(ghOK())document.querySelectorAll("[data-thumb]").forEach(async im=>{try{im.src=await blobURL(im.dataset.thumb)}catch(e){}});
+  document.querySelectorAll("[data-dopen]").forEach(b=>b.onclick=()=>openDoc(b.dataset.dopen));
+  document.querySelectorAll("[data-ddl]").forEach(b=>b.onclick=()=>downloadDoc(docs.find(x=>x.id===b.dataset.ddl)));
+  document.querySelectorAll("[data-ddel]").forEach(b=>b.onclick=()=>armed(b,()=>deleteDoc(b.dataset.ddel)))}
+function openViewer(name,doc){viewing=doc;$("#v-name").textContent=name;$("#v-pages").innerHTML="";$("#v-dl").hidden=!doc;$("#viewer").hidden=false;document.body.style.overflow="hidden"}
+$("#v-close").onclick=()=>{$("#viewer").hidden=true;$("#v-pages").innerHTML="";document.body.style.overflow=""};
+$("#v-dl").onclick=()=>viewing&&downloadDoc(viewing);
+async function openDoc(id){const d=docs.find(x=>x.id===id);if(!d)return;if(!ghOK()){toast("Liga primeiro a app ao GitHub");return}
+  openViewer(d.title||"Documento",d);const box=$("#v-pages");
+  for(const f of docFiles(d)){if($("#viewer").hidden)return;
+    if(/^image\//.test(f.mime||"")){const im=document.createElement("img");im.alt=f.name||"";box.appendChild(im);try{im.src=await blobURL(f.path)}catch(e){im.replaceWith(Object.assign(document.createElement("div"),{className:"muted",textContent:"Não consegui abrir "+(f.name||"a imagem")+"."}))}continue}
+    const msg=document.createElement("div");msg.className="muted";msg.textContent="A abrir o PDF…";box.appendChild(msg);
+    try{await loadScript("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js");await loadScript("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js");
+      const buf=await (await ghBlob(f.path)).arrayBuffer();const pdf=await window.pdfjsLib.getDocument({data:buf}).promise;msg.remove();
+      for(let i=1;i<=pdf.numPages;i++){if($("#viewer").hidden)return;const pg=await pdf.getPage(i);const w=Math.min(box.clientWidth||600,900)*(window.devicePixelRatio||1);
+        const vp0=pg.getViewport({scale:1}),vp=pg.getViewport({scale:w/vp0.width});const cv=document.createElement("canvas");cv.width=vp.width;cv.height=vp.height;box.appendChild(cv);
+        await pg.render({canvasContext:cv.getContext("2d"),viewport:vp}).promise}}
+    catch(e){msg.textContent="Não foi possível mostrar este PDF aqui. Usa Descarregar para o abrir."}}}
+async function downloadDoc(d){if(!d)return;if(!ghOK()){toast("Liga primeiro a app ao GitHub");return}
+  for(const f of docFiles(d)){try{saveBlob(await ghBlob(f.path),String(f.name||f.path.split("/").pop()).replace(/[\\/:*?"<>|]+/g,"-"))}catch(e){toast("Não foi possível descarregar");return}}}
+async function deleteDoc(id){const d=D.docs.find(x=>x.id===id);if(!d)return;d.deleted=true;d.u=Date.now();derive();changed();renderDocs();toast("Documento apagado");
+  // Tento também apagar os ficheiros do repositório; se falhar, ficam lá mas deixam de aparecer na app
+  for(const f of docFiles(d)){try{const r=await gh(f.path);if(!r.ok)continue;const j=await r.json();await gh(f.path,{method:"DELETE",body:JSON.stringify({message:"Apagar "+f.name,sha:j.sha})})}catch(e){}}}
+$("#d-date").value=todayStr();
+$("#d-file").onchange=()=>{$("#d-err").hidden=true;const f=$("#d-file").files[0];if(f&&!$("#d-title").value)$("#d-title").value=f.name.replace(/\.[^.]+$/,"")};
+$("#d-save").onclick=async()=>{const f=$("#d-file").files[0],err=$("#d-err"),btn=$("#d-save");
+  if(!f){err.textContent="Escolhe primeiro um ficheiro.";err.hidden=false;return}
+  if(f.size>25*1024*1024){err.textContent="O ficheiro tem mais de 25 MB. Escolhe um mais pequeno.";err.hidden=false;return}
+  if(!ghOK()){err.textContent="Liga primeiro a app ao GitHub, em Sobre mim.";err.hidden=false;return}
+  btn.disabled=true;btn.textContent="A enviar…";
+  try{const date=$("#d-date").value||todayStr();const name=f.name.replace(/[^\w.\-]+/g,"_");const p="documentos/"+date+"_"+Date.now().toString(36)+"_"+name;
+    const r=await putFile(p,b64(new Uint8Array(await f.arrayBuffer())),null,"Documento "+f.name);if(r!=="ok")throw{msg:"conflito"};
+    blobs.set(p,f);D.docs.push({id:uid(),title:$("#d-title").value.trim()||f.name,cat:$("#d-cat").value,date,note:$("#d-note").value.trim(),files:[{path:p,name:f.name,mime:f.type||"application/octet-stream"}],added:new Date().toISOString(),u:Date.now()});
+    derive();changed();$("#d-file").value="";$("#d-title").value="";$("#d-note").value="";toast("Documento guardado");renderDocs()}
+  catch(e){err.textContent=(e&&e.msg&&e.msg!=="conflito")?e.msg:"Não foi possível enviar o documento. Tenta outra vez.";err.hidden=false}
+  btn.disabled=false;btn.textContent="Guardar documento"};
+
+/* ---------- medicação ---------- */
+function renderMeds(){const all=[];for(const k in days){const d=days[k];(d.meds||[]).forEach(m=>{if(m&&(m.name||"").trim())all.push({date:k,t:m.t||"",name:m.name.trim(),dose:m.dose||""})})}
+  all.sort((a,b)=>(b.date+b.t).localeCompare(a.date+a.t));const box=$("#m-list");
+  if(!all.length){box.innerHTML='<div class="card"><div class="empty">Ainda não registaste medicação. Faz isso no separador Hoje, na secção Medicação.</div></div>';return}
+  const years=[...new Set(all.map(m=>m.date.slice(0,4)))];
+  box.innerHTML=years.map(y=>{const L=all.filter(m=>m.date.startsWith(y));const cnt={};L.forEach(m=>cnt[m.name]=(cnt[m.name]||0)+1);
+    return `<div class="card"><div class="row spread"><span class="year">${y}</span><span class="muted">${L.length} tomas</span></div>
+    <div class="chips">${Object.entries(cnt).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<span class="tag">${esc(k)} × ${v}</span>`).join("")}</div>
+    <div>${L.map(m=>`<div class="med" data-go="${m.date}"><span class="num muted">${dmy(m.date).slice(0,5)} ${esc(m.t)}</span><span><b>${esc(m.name)}</b>${m.dose?" · "+esc(m.dose):""}</span></div>`).join("")}</div></div>`}).join("");
+  box.querySelectorAll("[data-go]").forEach(r=>r.onclick=()=>{cur=r.dataset.go;go("hoje")})}
+
+/* ---------- sobre mim, ligação e plano ---------- */
+function renderMais(){const t=$("#s-text");if(document.activeElement!==t&&!t.dataset.edit)t.value=(sobre&&sobre.text)||"";
+  $("#s-when").textContent=sobre&&sobre.updatedAt?"Atualizado a "+new Date(sobre.updatedAt).toLocaleDateString("pt-PT"):"";
+  if(document.activeElement!==$("#g-user"))$("#g-user").value=cfg.user;if(document.activeElement!==$("#g-repo"))$("#g-repo").value=cfg.repo;
+  $("#g-token").placeholder=cfg.token?"Token guardado neste dispositivo":"github_pat_…";
+  const last=LS.get("ds-last","");$("#g-info").textContent=ghOK()?("Ligado a "+cfg.user+"/"+cfg.repo+(last?". Última sincronização: "+new Date(last).toLocaleString("pt-PT"):"")):"Ainda não ligado.";
+  const d=day();$("#p-list").innerHTML=PLAN.map(([h,x],i)=>`<label class="chk"><input type="checkbox" data-pc="${i}" ${d.checks[i]?"checked":""}><span class="h">${h}</span><span>${esc(x)}</span></label>`).join("");
+  $("#p-score").textContent=Object.values(d.checks).filter(Boolean).length+"/"+PLAN.length;
+  document.querySelectorAll("[data-pc]").forEach(c=>c.onchange=()=>{day().checks[c.dataset.pc]=c.checked;save();renderMais()})}
+$("#s-text").oninput=()=>$("#s-text").dataset.edit="1";
+$("#s-save").onclick=()=>{D.sobre={text:$("#s-text").value,updatedAt:new Date().toISOString()};derive();changed();delete $("#s-text").dataset.edit;toast("Guardado");renderMais()};
+$("#g-save").onclick=async()=>{const err=$("#g-err"),btn=$("#g-save");err.hidden=true;
+  const user=$("#g-user").value.trim(),repo=$("#g-repo").value.trim()||"saude-dados",token=$("#g-token").value.trim()||cfg.token;
+  if(!user||!token){err.textContent="Preenche o utilizador e o token.";err.hidden=false;return}
+  btn.disabled=true;btn.textContent="A testar…";
+  try{const r=await fetch("https://api.github.com/repos/"+encodeURIComponent(user)+"/"+encodeURIComponent(repo),{cache:"no-store",headers:{Authorization:"Bearer "+token,Accept:"application/vnd.github+json"}});
+    if(r.status===401)throw{msg:"O token não é válido ou expirou."};if(r.status===404||r.status===403)throw{msg:"Não encontrei o repositório, ou o token não tem acesso a ele."};if(!r.ok)throw{msg:"O GitHub respondeu "+r.status+"."};
+    const j=await r.json();cfg={user,repo,token};LS.set("ds-cfg",cfg);$("#g-token").value="";
+    toast(j.private?"Ligado ao repositório privado":"Atenção: este repositório é público");await sync()}
+  catch(e){err.textContent=(e&&e.msg)||"Sem ligação à internet.";err.hidden=false}
+  btn.disabled=false;btn.textContent="Guardar e testar";renderMais()};
+$("#g-sync").onclick=()=>sync();$("#sync-btn").onclick=()=>sync();
+$("#g-forget").onclick=function(){armed(this,()=>{cfg={user:"",repo:"saude-dados",token:""};LS.set("ds-cfg",cfg);toast("Ligação esquecida neste dispositivo");renderMais()})};
+
+/* ---------- arranque ---------- */
+function start(){
+  if(!ghOK()){status("Guardado só neste dispositivo");banner("Para guardar no GitHub e ver os teus dados noutros dispositivos, vai a Sobre mim → Ligação ao GitHub.")}
+  else{status(pend?"Por enviar…":"A sincronizar…");sync()}
+  window.addEventListener("online",()=>sync());
+  // Quando volto à app, vou buscar o que tenha sido registado noutro dispositivo
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")sync()});
+  if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js").catch(()=>{});
+}
+
+go(location.hash.slice(1)||"hoje");
+start();
+}
+</script>
+</body>
+</html>
